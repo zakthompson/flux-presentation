@@ -48,6 +48,7 @@
             Lead Web Developer @ <br /><img width='30%' src="https://dl.dropboxusercontent.com/u/4806580/logo_full.png" /></small>
 					</p>
           <p><small><a href="mailto:zak@gobridgit.com">zak@gobridgit.com</a></small></p>
+          <p><small>This presentation can be forked at <a href="https://github.com/zakthompson/flux-presentation">https://github.com/zakthompson/flux-presentation</a></small></p>
 
           <aside class="notes">Hello everyone, my name is Zak Thompson.  I'm the lead web developer at Bridgit, a local startup that makes deficiency-tracking software for the construction industry. Tonight I'll be talking about Flux application architecture, which we've implemented our web application in since February of this year.</aside>
 				</section>
@@ -70,11 +71,15 @@
                 <li class"fragment">Fluxible</li>
               </ul>
             </ul>
+
+            <aside class="notes">The first thing is that Flux is not a framework. Many people are confused by this. It's a little confusing because Facebook does provide a Flux package on npm...but all that actually contains is a dispatcher implementation, and a few utilities. Flux is an application architecture, much like MVC. And just like MVC is not a framework, but there are many frameworks built around it, there are many Flux frameworks out there too. We will not be talking about any of these frameworks today - only about Flux itself
           </section>
 
           <section data-transition="none">
             <h3>Flux &ne; MVC</h3>
             <p class="fragment">"Flux's ______ is like MVC's ______"</p>
+
+            <aside class="notes">Flux is not MVC.  It's not an implementation of MVC or a slight alteration to MVC...we often have the temptation to make comparisons like this, but honestly it only confuses things more</aside>
           </section>
 
           <section data-transition="fade-in slide-out">
@@ -91,7 +96,7 @@
               <li class="fragment">React is simply the view layer</li>
               <li class="fragment">Architecture could even be used outside of web!</li>
 
-            <aside class="notes">This was the hardest part for me, having only really developed in MVC architecture for years, completely throwing out the comparisons and starting from scratch</aside>
+            <aside class="notes">React and Flux are not the same thing. They compliment each other, and were designed with each other in mind. But React is simply a view layer, and Flux is simply an architecture. It could even be implemented outside of web entirely! Okay, with those misconceptions out of the way, let's move on to what Flux is all about</aside>
           </section>
 				</section>
 
@@ -137,6 +142,8 @@
             <li class="fragment">Synchronous</li>
             <li class="fragment"><b>Largely taken care of for us by Facebook</b></li>
           </ul>
+
+          <aside class="notes">The dispatcher is essentially just a giant registry of callbacks registered by stores. Whenever it receives an action, it calls all of those callbacks, passing the data from the action. It doesn't care to know which stores care about which actions - that's not its concern.  Just send all actions to all stores. It's worth noting that these actions get dispatched synchronously - your stores will never receive actions out of order.  This component is basically implemented for you in Facebook's Flux package</aside>
         </section>
 
         <section>
@@ -191,6 +198,8 @@ AppDispatcher = _.assign(new Dispatcher(), {
 module.exports = AppDispatcher;
             </code>
           </pre>
+
+          <aside class="notes">At Bridgit, we've adopted the common practice of writing a small wrapper around Facebook's implementation. All we're really doing here is using a queue to call dispatch on each action we receive, and extending the dispatcher with a couple of methods that let us differentiate between actions triggered by a server event, versus actions triggered by a view event</aside>
         </section>
 
         <section>
@@ -199,8 +208,11 @@ module.exports = AppDispatcher;
             <li class="fragment">Musical piggy-banks</li>
             <li class="fragment">Handle all application state</li>
             <li class="fragment">Only accepts data through action/dispatcher process</li>
+            <li class="fragment">Exposes methods to retrieve state</li>
             <li class="fragment">Exposes methods for views to subscribe to their change events</li>
           </ul>
+
+          <aside class="notes">I like to think of stores as musical piggy-banks. They handle all of your application state. Often you'll separate different logical state components into separate stores, such a store for errors, a store for filters, a store for your ToDo objects, etc. It's important to note that stores only accept data through the action/dispatcher process.  You can't simply inject data into stores arbitrarily or muck around with the stored state, you can only trigger actions. The store exposes methods for retrieving state only, plus some helpful methods that views can use to subscribe to be notified when state changes.
         </section>
 
         <section>
@@ -241,6 +253,8 @@ const LocationStore = _.assign({}, EventEmitter.prototype, {
 });
             </code>
           </pre>
+
+          <aside class="notes">Here we have an object to store a component of our application state - in this case location objects. Stores are generally extended from Node's EventEmitter, and you can see we're exposing methods to subscribe to this store's change events and to get application state out</aside>
         </section>
 
         <section>
@@ -268,6 +282,8 @@ LocationStore.dispatchToken = AppDispatcher.register(function(payload) {
 });
             </code>
           </pre>
+
+          <aside class="notes">Here is where we register this store with the Dispatcher.  We say "hey when you get an action, call this method and pass us the action".  Then we check if we care about the action and modify our internal state if necessary, and then emit a change so that our views know to update</aside>
         </section>
 
         <section>
@@ -276,6 +292,7 @@ LocationStore.dispatchToken = AppDispatcher.register(function(payload) {
             <li class="fragment">Subscribe to stores</li>
             <li class="fragment">Update state from stores when notified of changes</li>
             <li class="fragment">Generate new actions from user interaction</li>
+            <li class="fragment">This is the part we build in React!</li>
           </ul>
         </section>
 
@@ -353,6 +370,8 @@ const ActivityList = React.createClass({
             <li class="fragment">"Action Creators" add new actions to the pipeline</li>
             <li class="fragment">Actions contain information stores care about</li>
           </ul>
+
+          <aside class="notes">As mentioned before, we can't update application state directly through the stores. We must do so throuh actions. "Action Creators" add new actions to the pipeline, and each of these actions contains a payload that the various stores may or may not care about.</aside>
         </section>
 
         <section>
@@ -380,6 +399,8 @@ const Button = React.createClass({
 }
             </code>
           </pre>
+
+          <aside class="notes">Here's an example of a simple button component. We've added an onClick method that updates the state and then sends an action using in this case the WorkSequenceActionCreators</aside>
         </section>
 
         <section>
@@ -401,7 +422,7 @@ const WorkSequenceActionCreators = {
             </code>
           </pre>
 
-          <aside class="notes">So our AppDispatcher would then send out this action, stores who care about it would update their internal state and emit a change event, which would cause any views subscribed to those stores to rerender.</aside>
+          <aside class="notes">And here are the WorkSequenceActionCreators.  So our AppDispatcher would then send out this action, stores who care about it would update their internal state and emit a change event, which would cause any views subscribed to those stores to rerender.</aside>
         </section>
 
         <section>
